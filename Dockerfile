@@ -1,9 +1,21 @@
-FROM eclipse-temurin:21-jdk-alpine
+FROM maven:3.8.5-openjdk-17 AS build
 
 WORKDIR /app
 
-COPY . ./
+COPY pom.xml .
+COPY src ./src
 
-RUN ./mvnw -DoutputFile=target/mvn-dependency-list.log -B -DskipTests clean dependency:list install
+#RUN mvn dependency:go-offline
 
-CMD ["sh", "-c", "java -jar target/*.jar"]
+RUN mvn clean package -DskipTests
+
+FROM openjdk:17.0.1-jdk-slim
+
+WORKDIR /app
+
+COPY --from=build /app/target/demo-0.0.1-SNAPSHOT.jar demo.jar
+
+EXPOSE 8080
+EXPOSE 9092
+
+ENTRYPOINT ["java", "-jar", "demo.jar"]
